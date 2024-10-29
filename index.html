@@ -563,6 +563,9 @@
 
         const coverDiv = document.createElement("div");
         coverDiv.className = "cover-image";
+        container.appendChild(coverDiv);
+        
+        content.appendChild(container);
         const img = document.createElement("img");
         const coverSrc =
           (await getFirstImage(baseurl, subdir)) ||
@@ -570,9 +573,6 @@
         img.src = coverSrc;
         img.alt = `${subdir} Cover Image`;
         coverDiv.appendChild(img);
-        container.appendChild(coverDiv);
-
-        content.appendChild(container);
       }
 
       /**
