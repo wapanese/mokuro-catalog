@@ -643,6 +643,9 @@
           container.appendChild(coverDiv);
 
           content.appendChild(container);
+
+          hideLoading();
+
           const img = document.createElement("img");
           const coverSrc =
             (await getFirstImage(baseurl, subdir)) ||
