@@ -257,16 +257,79 @@
         background-color: var(--secondary);
         transform: translateY(-2px);
       }
+
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(18, 18, 18, 0.8);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      /* Spinner Styles */
+      .spinner {
+        border: 8px solid var(--surface);
+        border-top: 8px solid var(--primary);
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1s linear infinite;
+      }
+
+      /* Loading Text Styles */
+      .loading-text {
+        margin-top: 16px;
+        font-size: 1.2rem;
+        color: var(--primary);
+      }
+
+      /* Spinner Animation */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
     <header>
       <h1 id="page-header">Mokuro Catalog</h1>
     </header>
+
+    <div id="loading" class="loading-overlay" hidden>
+      <div class="spinner"></div>
+      <div class="loading-text">Loading...</div>
+    </div>
+
     <div id="content" class="container"></div>
 
     <script>
       const CACHE = {};
+      /**
+       * Shows the loading overlay.
+       */
+      function showLoading() {
+        const loading = document.getElementById("loading");
+        if (loading) {
+          loading.style.display = "flex";
+        }
+      }
+
+      /**
+       * Hides the loading overlay.
+       */
+      function hideLoading() {
+        const loading = document.getElementById("loading");
+        if (loading) {
+          loading.style.display = "none";
+        }
+      }
 
       function encodePathComponent(component) {
         return encodeURIComponent(component).replace(/%2F/g, "/");
@@ -467,54 +530,64 @@
        */
       async function createLandingPage(baseurl, readerUrl) {
         updatePageTitle("Mokuro Catalog");
-        const content = document.getElementById("content");
 
-        // Create search bar
-        const searchDiv = document.createElement("div");
-        searchDiv.style.marginBottom = "20px";
-        searchDiv.innerHTML = `
-          <input type="text" id="search" placeholder="Search folders..." aria-label="Search folders">
-        `;
-        content.appendChild(searchDiv);
+        showLoading();
 
-        const listDiv = document.createElement("div");
-        listDiv.className = "subdir-list";
-        const ul = document.createElement("ul");
+        try {
+          const content = document.getElementById("content");
 
-        // Get all directories without mokuro check
-        const dirs = await getDirectories(baseurl, false);
+          // Create search bar
+          const searchDiv = document.createElement("div");
+          searchDiv.style.marginBottom = "20px";
+          searchDiv.innerHTML = `
+            <input type="text" id="search" placeholder="Search folders..." aria-label="Search folders">
+          `;
+          content.appendChild(searchDiv);
 
-        if (dirs.length === 0) {
-          ul.innerHTML = "<li>No directories found.</li>";
-        } else {
-          dirs.forEach((dir) => {
-            const li = document.createElement("li");
-            const link = document.createElement("a");
-            link.href = `?baseurl=${encodeURIComponent(
-              baseurl
-            )}&reader_url=${encodeURIComponent(
-              readerUrl
-            )}&subdir=${encodeURIComponent(dir)}`;
-            link.textContent = dir;
-            li.appendChild(link);
-            ul.appendChild(li);
+          const listDiv = document.createElement("div");
+          listDiv.className = "subdir-list";
+          const ul = document.createElement("ul");
+
+          // Get all directories without mokuro check
+          const dirs = await getDirectories(baseurl, false);
+
+          if (dirs.length === 0) {
+            ul.innerHTML = "<li>No directories found.</li>";
+          } else {
+            dirs.forEach((dir) => {
+              const li = document.createElement("li");
+              const link = document.createElement("a");
+              link.href = `?baseurl=${encodeURIComponent(
+                baseurl
+              )}&reader_url=${encodeURIComponent(
+                readerUrl
+              )}&subdir=${encodeURIComponent(dir)}`;
+              link.textContent = dir;
+              li.appendChild(link);
+              ul.appendChild(li);
+            });
+          }
+
+          listDiv.appendChild(ul);
+          content.appendChild(listDiv);
+
+          // Add search functionality
+          const searchInput = document.getElementById("search");
+          searchInput.addEventListener("input", (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const items = ul.getElementsByTagName("li");
+
+            Array.from(items).forEach((item) => {
+              const text = item.textContent.toLowerCase();
+              item.style.display = text.includes(searchTerm) ? "" : "none";
+            });
           });
+        } catch (error) {
+          console.error("Error creating landing page:", error);
+          content.innerHTML = "<p>Failed to load landing page.</p>";
+        } finally {
+          hideLoading();
         }
-
-        listDiv.appendChild(ul);
-        content.appendChild(listDiv);
-
-        // Add search functionality
-        const searchInput = document.getElementById("search");
-        searchInput.addEventListener("input", (e) => {
-          const searchTerm = e.target.value.toLowerCase();
-          const items = ul.getElementsByTagName("li");
-
-          Array.from(items).forEach((item) => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(searchTerm) ? "" : "none";
-          });
-        });
       }
 
       /**
@@ -525,54 +598,64 @@
        */
       async function createSubdirView(baseurl, readerUrl, subdir) {
         updatePageTitle(subdir);
-        const content = document.getElementById("content");
-        const container = document.createElement("div");
-        container.className = "subdir-container";
+        showLoading();
 
-        const listDiv = document.createElement("div");
-        listDiv.className = "subdir-list";
-        const ul = document.createElement("ul");
+        try {
+          const content = document.getElementById("content");
+          const container = document.createElement("div");
+          container.className = "subdir-container";
 
-        const subdirUrl = `${baseurl.replace(/\/+$/, "")}/${encodePathComponent(
-          subdir
-        )}/`;
-        const dirs = await getDirectories(subdirUrl, true, subdir); // Check for specific .mokuro file
+          const listDiv = document.createElement("div");
+          listDiv.className = "subdir-list";
+          const ul = document.createElement("ul");
 
-        if (dirs.length === 0) {
-          ul.innerHTML =
-            "<li>No subdirectories with matching .mokuro files found.</li>";
-        } else {
-          dirs.forEach((dir) => {
-            const li = document.createElement("li");
-            const link = document.createElement("a");
-            link.href = `${readerUrl.replace(
-              /\/$/,
-              ""
-            )}/upload?manga=${encodeURIComponent(
-              subdir
-            )}&volume=${encodeURIComponent(dir)}&url=${encodeURIComponent(
-              baseurl
-            )}`;
-            link.textContent = dir;
-            li.appendChild(link);
-            ul.appendChild(li);
-          });
+          const subdirUrl = `${baseurl.replace(
+            /\/+$/,
+            ""
+          )}/${encodePathComponent(subdir)}/`;
+          const dirs = await getDirectories(subdirUrl, true, subdir); // Check for specific .mokuro file
+
+          if (dirs.length === 0) {
+            ul.innerHTML =
+              "<li>No subdirectories with matching .mokuro files found.</li>";
+          } else {
+            dirs.forEach((dir) => {
+              const li = document.createElement("li");
+              const link = document.createElement("a");
+              link.href = `${readerUrl.replace(
+                /\/$/,
+                ""
+              )}/upload?manga=${encodeURIComponent(
+                subdir
+              )}&volume=${encodeURIComponent(dir)}&url=${encodeURIComponent(
+                baseurl
+              )}`;
+              link.textContent = dir;
+              li.appendChild(link);
+              ul.appendChild(li);
+            });
+          }
+          listDiv.appendChild(ul);
+          container.appendChild(listDiv);
+
+          const coverDiv = document.createElement("div");
+          coverDiv.className = "cover-image";
+          container.appendChild(coverDiv);
+
+          content.appendChild(container);
+          const img = document.createElement("img");
+          const coverSrc =
+            (await getFirstImage(baseurl, subdir)) ||
+            "https://via.placeholder.com/400x600?text=No+Cover";
+          img.src = coverSrc;
+          img.alt = `${subdir} Cover Image`;
+          coverDiv.appendChild(img);
+        } catch (error) {
+          console.error("Error creating subdirectory view:", error);
+          content.innerHTML = "<p>Failed to load subdirectory view.</p>";
+        } finally {
+          hideLoading();
         }
-        listDiv.appendChild(ul);
-        container.appendChild(listDiv);
-
-        const coverDiv = document.createElement("div");
-        coverDiv.className = "cover-image";
-        container.appendChild(coverDiv);
-        
-        content.appendChild(container);
-        const img = document.createElement("img");
-        const coverSrc =
-          (await getFirstImage(baseurl, subdir)) ||
-          "https://via.placeholder.com/400x600?text=No+Cover";
-        img.src = coverSrc;
-        img.alt = `${subdir} Cover Image`;
-        coverDiv.appendChild(img);
       }
 
       /**
