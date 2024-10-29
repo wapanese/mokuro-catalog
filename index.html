@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="page-title">Mokuro Catalog</title>
+    <style>
+      :root {
+        --primary: #bb86fc;
+        --secondary: #03dac6;
+        --background: #121212;
+        --surface: #1f1b24;
+        --error: #cf6679;
+        --on-primary: #000000;
+        --on-secondary: #000000;
+        --on-background: #ffffff;
+        --on-surface: #ffffff;
+        --on-error: #000000;
+        --shadow: rgba(0, 0, 0, 0.2);
+        --border-radius: 12px;
+        --transition-speed: 0.3s;
+        --font-family: "Roboto", sans-serif;
+      }
+
+      body {
+        font-family: var(--font-family);
+        margin: 0;
+        background-color: var(--background);
+        color: var(--on-background);
+        transition: background-color var(--transition-speed),
+          color var(--transition-speed);
+      }
+
+      header {
+        text-align: center;
+        padding: 20px 0;
+        background-color: var(--surface);
+        margin: 0;
+        box-shadow: 0 2px 4px var(--shadow);
+        border-bottom-left-radius: var(--border-radius);
+        border-bottom-right-radius: var(--border-radius);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+      }
+
+      .container {
+        padding: 20px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 24px;
+      }
+
+      .folder {
+        background-color: var(--surface);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 4px 6px var(--shadow);
+        transition: transform var(--transition-speed),
+          box-shadow var(--transition-speed);
+      }
+
+      .folder:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 12px var(--shadow);
+      }
+
+      .folder a {
+        text-decoration: none;
+        color: var(--on-surface);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .folder img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        border-top-left-radius: var(--border-radius);
+        border-top-right-radius: var(--border-radius);
+        transition: transform var(--transition-speed);
+      }
+
+      .folder img:hover {
+        transform: scale(1.05);
+      }
+
+      .folder-name {
+        padding: 12px;
+        background-color: var(--background);
+        font-weight: 500;
+        font-size: 1rem;
+        border-bottom-left-radius: var(--border-radius);
+        border-bottom-right-radius: var(--border-radius);
+        transition: background-color var(--transition-speed);
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .folder-name:hover {
+        background-color: var(--primary);
+        color: var(--on-primary);
+      }
+
+      .subdir-container {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+
+      .subdir-list {
+        flex: 1 1 300px;
+      }
+
+      .subdir-list ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .subdir-list li a {
+        display: block;
+        padding: 14px 20px;
+        background-color: var(--surface);
+        border-radius: var(--border-radius);
+        margin-bottom: 12px;
+        text-decoration: none;
+        color: var(--on-surface);
+        font-size: 0.95rem;
+        transition: background-color var(--transition-speed),
+          transform var(--transition-speed);
+        box-shadow: 0 2px 4px var(--shadow);
+      }
+
+      .subdir-list li a:hover {
+        background-color: var(--primary);
+        color: var(--on-primary);
+        transform: translateY(-4px);
+      }
+
+      .cover-image {
+        flex: 1 1 300px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .cover-image img {
+        max-width: 100%;
+        max-height: 80vh;
+        border-radius: var(--border-radius);
+        box-shadow: 0 4px 8px var(--shadow);
+        object-fit: contain;
+        transition: transform var(--transition-speed);
+      }
+
+      .cover-image img:hover {
+        transform: scale(1.05);
+      }
+
+      #search {
+        width: 100%;
+        padding: 14px 20px;
+        box-sizing: border-box;
+        border: none;
+        border-radius: var(--border-radius);
+        background-color: var(--surface);
+        color: var(--on-surface);
+        font-family: var(--font-family);
+        font-size: 1rem;
+        margin-bottom: 20px;
+      }
+
+      /* Responsive Adjustments */
+      @media (max-width: 768px) {
+        .subdir-container {
+          flex-direction: column;
+        }
+      }
+
+      /* Scrollbar Styling */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--surface);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background-color: var(--primary);
+        border-radius: 4px;
+      }
+
+      /* Setup Container */
+      #setup-container {
+        max-width: 400px;
+        margin: 40px auto;
+        padding: 24px;
+        background-color: var(--surface);
+        border-radius: var(--border-radius);
+        box-shadow: 0 4px 8px var(--shadow);
+      }
+
+      #setup-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      #setup-form label {
+        font-size: 0.9rem;
+        color: var(--on-surface);
+      }
+
+      #setup-form input {
+        padding: 12px;
+        border: none;
+        border-radius: var(--border-radius);
+        background-color: var(--background);
+        color: var(--on-surface);
+        font-family: var(--font-family);
+        font-size: 1rem;
+      }
+
+      #setup-form button {
+        padding: 12px;
+        border: none;
+        border-radius: var(--border-radius);
+        background-color: var(--primary);
+        color: var(--on-primary);
+        font-family: var(--font-family);
+        font-size: 1rem;
+        cursor: pointer;
+        transition: transform var(--transition-speed),
+          background-color var(--transition-speed);
+        margin-top: 8px;
+      }
+
+      #setup-form button:hover {
+        background-color: var(--secondary);
+        transform: translateY(-2px);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 id="page-header">Mokuro Catalog</h1>
+    </header>
+    <div id="content" class="container"></div>
+
+    <script>
+      const CACHE = {};
+
+      function encodePathComponent(component) {
+        return encodeURIComponent(component).replace(/%2F/g, "/");
+      }
+
+      function updatePageTitle(title) {
+        document.getElementById("page-title").textContent = title;
+        document.getElementById("page-header").textContent = title;
+      }
+
+      /**
+       * Concurrency Pool Implementation
+       * Limits the number of concurrent asynchronous operations.
+       * @param {number} poolLimit - Maximum number of concurrent operations.
+       * @param {Array} array - Array of items to process.
+       * @param {Function} iteratorFn - Async function to apply to each item.
+       * @returns {Promise<Array>} - Resolves when all operations are complete.
+       */
+      async function asyncPool(poolLimit, array, iteratorFn) {
+        const ret = [];
+        const executing = [];
+        for (const item of array) {
+          const p = Promise.resolve().then(() => iteratorFn(item));
+          ret.push(p);
+
+          if (poolLimit <= array.length) {
+            const e = p.then(() => {
+              executing.splice(executing.indexOf(e), 1);
+            });
+            executing.push(e);
+            if (executing.length >= poolLimit) {
+              await Promise.race(executing);
+            }
+          }
+        }
+        return Promise.all(ret);
+      }
+
+      /**
+       * Fetches and parses the HTML content from the given URL.
+       * Utilizes caching to prevent redundant network requests.
+       * @param {string} url - The URL to fetch.
+       * @returns {Promise<Document|null>} - The parsed HTML document or null if an error occurs.
+       */
+      async function fetchAndParse(url) {
+        if (CACHE[url]) {
+          return CACHE[url];
+        }
+
+        try {
+          const response = await fetch(url);
+          if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
+          const text = await response.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(text, "text/html");
+          CACHE[url] = doc;
+          return doc;
+        } catch (error) {
+          console.error("Error fetching URL:", url, error);
+          return null;
+        }
+      }
+
+      /**
+       * Checks if a specific .mokuro file exists in the given directory.
+       * @param {string} dirname - The directory name.
+       * @param {Array} filelist - List of files in the directory.
+       * @returns {boolean} - True if the specific .mokuro file exists, else false.
+       */
+      function hasSpecificMokuroFile(dirname, filelist) {
+        return filelist.includes(`${dirname}.mokuro`);
+      }
+
+      /**
+       * Retrieves directories from a given URL with optional .mokuro file checks.
+       * @param {string} url - The base URL to fetch directories from.
+       * @param {boolean} requireMokuro - Whether to filter directories that contain any .mokuro files.
+       * @param {string|null} specificMokuroFile - If provided, checks for a specific .mokuro file matching the folder name.
+       * @returns {Promise<string[]>} - Array of directory names that meet the criteria.
+       */
+      async function getDirectories(
+        url,
+        requireMokuro = false,
+        specificMokuroFile = null
+      ) {
+        const doc = await fetchAndParse(url);
+        if (!doc) return [];
+        const links = Array.from(doc.querySelectorAll("a")).map((a) =>
+          decodeURIComponent(a.getAttribute("href"))
+        );
+        let dirs = links
+          .filter(
+            (href) =>
+              href.endsWith("/") &&
+              !["./", "../"].includes(href) &&
+              !href.includes("_ocr/")
+          )
+          .map((dir) => dir.replace(/\/$/, ""));
+
+        const files = links.filter((href) => !href.endsWith("/"));
+
+        if (requireMokuro) {
+          const poolLimit = 16;
+          const filteredDirs = [];
+
+          await asyncPool(poolLimit, dirs, async (dir) => {
+            let hasMokuro;
+            if (specificMokuroFile) {
+              hasMokuro = hasSpecificMokuroFile(dir, files);
+            } else {
+              hasMokuro = await hasAnyMokuroFile(
+                `${url}/${encodePathComponent(dir)}/`
+              );
+            }
+            if (hasMokuro) {
+              filteredDirs.push(dir);
+            }
+          });
+
+          return filteredDirs;
+        }
+
+        return dirs;
+      }
+
+      /**
+       * Checks if any .mokuro file exists in the specified directory.
+       * @param {string} directoryUrl - The URL of the directory.
+       * @returns {Promise<boolean>} - True if any .mokuro file exists, else false.
+       */
+      async function hasAnyMokuroFile(directoryUrl) {
+        const doc = await fetchAndParse(directoryUrl);
+        if (!doc) return false;
+
+        const links = Array.from(doc.querySelectorAll("a"))
+          .map((a) => decodeURIComponent(a.getAttribute("href")))
+          .filter((href) => !href.endsWith("/")); // Only files
+
+        return links.some((href) => href.toLowerCase().endsWith(".mokuro"));
+      }
+
+      /**
+       * Retrieves the first image from the specified directory or its subdirectories.
+       * @param {string} baseurl - The base URL.
+       * @param {string} subdir - The subdirectory name.
+       * @returns {Promise<string|null>} - The image URL or null if not found.
+       */
+      async function getFirstImage(baseurl, subdir) {
+        const url = subdir
+          ? `${baseurl.replace(/\/+$/, "")}/${encodePathComponent(subdir)}/`
+          : baseurl;
+        const doc = await fetchAndParse(url);
+        if (!doc) return null;
+
+        const subdirs = Array.from(doc.querySelectorAll("a"))
+          .map((a) => decodeURIComponent(a.getAttribute("href")))
+          .filter(
+            (href) =>
+              href.endsWith("/") &&
+              !["./", "../"].includes(href) &&
+              !href.includes("_ocr/")
+          )
+          .sort();
+
+        if (subdirs.length === 0) return null;
+
+        const firstSubdir = subdirs[0].replace(/\/$/, "");
+        const subsubdirUrl = `${url}${encodePathComponent(firstSubdir)}/`;
+
+        const subsubdirDoc = await fetchAndParse(subsubdirUrl);
+        if (!subsubdirDoc) return null;
+
+        const imageExtensions = [
+          ".jpg",
+          ".jpeg",
+          ".png",
+          ".gif",
+          ".bmp",
+          ".webp",
+          ".avif",
+        ];
+        const imgLink = Array.from(subsubdirDoc.querySelectorAll("a"))
+          .map((a) => decodeURIComponent(a.getAttribute("href")))
+          .find((href) =>
+            imageExtensions.some((ext) => href.toLowerCase().endsWith(ext))
+          );
+
+        return imgLink
+          ? `${subsubdirUrl}${encodePathComponent(imgLink)}`
+          : null;
+      }
+
+      /**
+       * Creates the landing page by displaying a searchable list of folders.
+       * @param {string} baseurl - The base URL.
+       * @param {string} readerUrl - The reader URL.
+       */
+      async function createLandingPage(baseurl, readerUrl) {
+        updatePageTitle("Mokuro Catalog");
+        const content = document.getElementById("content");
+
+        // Create search bar
+        const searchDiv = document.createElement("div");
+        searchDiv.style.marginBottom = "20px";
+        searchDiv.innerHTML = `
+          <input type="text" id="search" placeholder="Search folders..." aria-label="Search folders">
+        `;
+        content.appendChild(searchDiv);
+
+        const listDiv = document.createElement("div");
+        listDiv.className = "subdir-list";
+        const ul = document.createElement("ul");
+
+        // Get all directories without mokuro check
+        const dirs = await getDirectories(baseurl, false);
+
+        if (dirs.length === 0) {
+          ul.innerHTML = "<li>No directories found.</li>";
+        } else {
+          dirs.forEach((dir) => {
+            const li = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = `?baseurl=${encodeURIComponent(
+              baseurl
+            )}&reader_url=${encodeURIComponent(
+              readerUrl
+            )}&subdir=${encodeURIComponent(dir)}`;
+            link.textContent = dir;
+            li.appendChild(link);
+            ul.appendChild(li);
+          });
+        }
+
+        listDiv.appendChild(ul);
+        content.appendChild(listDiv);
+
+        // Add search functionality
+        const searchInput = document.getElementById("search");
+        searchInput.addEventListener("input", (e) => {
+          const searchTerm = e.target.value.toLowerCase();
+          const items = ul.getElementsByTagName("li");
+
+          Array.from(items).forEach((item) => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? "" : "none";
+          });
+        });
+      }
+
+      /**
+       * Creates the subdirectory view by displaying subfolders that have a matching .mokuro file.
+       * @param {string} baseurl - The base URL.
+       * @param {string} readerUrl - The reader URL.
+       * @param {string} subdir - The current subdirectory.
+       */
+      async function createSubdirView(baseurl, readerUrl, subdir) {
+        updatePageTitle(subdir);
+        const content = document.getElementById("content");
+        const container = document.createElement("div");
+        container.className = "subdir-container";
+
+        const listDiv = document.createElement("div");
+        listDiv.className = "subdir-list";
+        const ul = document.createElement("ul");
+
+        const subdirUrl = `${baseurl.replace(/\/+$/, "")}/${encodePathComponent(
+          subdir
+        )}/`;
+        const dirs = await getDirectories(subdirUrl, true, subdir); // Check for specific .mokuro file
+
+        if (dirs.length === 0) {
+          ul.innerHTML =
+            "<li>No subdirectories with matching .mokuro files found.</li>";
+        } else {
+          dirs.forEach((dir) => {
+            const li = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = `${readerUrl.replace(
+              /\/$/,
+              ""
+            )}/upload?manga=${encodeURIComponent(
+              subdir
+            )}&volume=${encodeURIComponent(dir)}&url=${encodeURIComponent(
+              baseurl
+            )}`;
+            link.textContent = dir;
+            li.appendChild(link);
+            ul.appendChild(li);
+          });
+        }
+        listDiv.appendChild(ul);
+        container.appendChild(listDiv);
+
+        const coverDiv = document.createElement("div");
+        coverDiv.className = "cover-image";
+        const img = document.createElement("img");
+        const coverSrc =
+          (await getFirstImage(baseurl, subdir)) ||
+          "https://via.placeholder.com/400x600?text=No+Cover";
+        img.src = coverSrc;
+        img.alt = `${subdir} Cover Image`;
+        coverDiv.appendChild(img);
+        container.appendChild(coverDiv);
+
+        content.appendChild(container);
+      }
+
+      /**
+       * Creates the input prompt for users to enter base URL and reader URL.
+       * @param {string} baseurl - Existing base URL value.
+       * @param {string} readerUrl - Existing reader URL value.
+       * @returns {Promise<Object>} - Resolves with the entered baseurl and readerUrl.
+       */
+      async function createInputPrompt(baseurl, readerUrl) {
+        const content = document.getElementById("content");
+        content.innerHTML = `
+          <div id="setup-container">
+            <form id="setup-form" aria-label="Setup Form">
+              <div>
+                <label for="baseurl">Base URL:</label>
+                <input type="url" id="baseurl" value="${
+                  baseurl || ""
+                }" required placeholder="https://example.com/directory">
+              </div>
+              
+              <div>
+                <label for="reader_url">Reader URL:</label>
+                <input type="url" id="reader_url" value="${
+                  readerUrl || ""
+                }" required placeholder="https://reader.example.com">
+              </div>
+              
+              <button type="submit">Continue</button>
+            </form>
+          </div>
+        `;
+
+        return new Promise((resolve) => {
+          document
+            .getElementById("setup-form")
+            .addEventListener("submit", (e) => {
+              e.preventDefault();
+              const baseurlInput = document
+                .getElementById("baseurl")
+                .value.trim();
+              const readerUrlInput = document
+                .getElementById("reader_url")
+                .value.trim();
+
+              if (baseurlInput && readerUrlInput) {
+                content.innerHTML = "";
+                resolve({ baseurl: baseurlInput, readerUrl: readerUrlInput });
+              }
+            });
+        });
+      }
+
+      /**
+       * Initializes the application by determining whether to show the landing page or a subdirectory view.
+       */
+      async function init() {
+        const params = new URLSearchParams(window.location.search);
+        let baseurl = params.get("baseurl");
+        let readerUrl = params.get("reader_url");
+        const subdir = params.get("subdir");
+
+        if (!baseurl || !readerUrl) {
+          const { baseurl: newBaseurl, readerUrl: newReaderUrl } =
+            await createInputPrompt(baseurl, readerUrl);
+          baseurl = newBaseurl;
+          readerUrl = newReaderUrl;
+        }
+
+        // Update URL with the provided values
+        if (!params.get("baseurl") || !params.get("reader_url")) {
+          const newParams = new URLSearchParams({
+            baseurl: baseurl,
+            reader_url: readerUrl,
+          });
+          if (subdir) {
+            newParams.append("subdir", subdir);
+          }
+          const newUrl = `${window.location.pathname}?${newParams.toString()}`;
+          window.history.replaceState({}, "", newUrl);
+        }
+
+        if (subdir) {
+          await createSubdirView(baseurl, readerUrl, subdir);
+        } else {
+          await createLandingPage(baseurl, readerUrl);
+        }
+      }
+
+      window.addEventListener("DOMContentLoaded", init);
+    </script>
+  </body>
+</html>
