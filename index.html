@@ -295,13 +295,41 @@
           transform: rotate(360deg);
         }
       }
+
+      .header-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        padding: 0 20px;
+      }
+
+      .back-button {
+        position: absolute;
+        left: 20px;
+        color: var(--on-surface);
+        text-decoration: none;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        border-radius: var(--border-radius);
+        transition: background-color var(--transition-speed);
+      }
+
+      .back-button:hover {
+        background-color: var(--primary);
+        color: var(--on-primary);
+      }
     </style>
   </head>
   <body>
     <header>
-      <h1 id="page-header">Mokuro Catalog</h1>
+      <div class="header-container">
+        <h1 id="page-header">Mokuro Catalog</h1>
+      </div>
     </header>
-
+    
     <div id="loading" class="loading-overlay" hidden>
       <div class="spinner"></div>
       <div class="loading-text">Loading...</div>
@@ -598,6 +626,17 @@
        */
       async function createSubdirView(baseurl, readerUrl, subdir) {
         updatePageTitle(subdir);
+
+        const headerContainer = document.querySelector('.header-container');
+        const backButton = document.createElement('a');
+        backButton.href = `?baseurl=${encodeURIComponent(baseurl)}&reader_url=${encodeURIComponent(readerUrl)}`;
+        backButton.className = 'back-button';
+        backButton.innerHTML = '➜';
+        backButton.title = 'Back to catalog';
+        backButton.style.transform = 'scale(-1, 1)';
+        headerContainer.insertBefore(backButton, headerContainer.firstChild);
+
+
         showLoading();
 
         try {
