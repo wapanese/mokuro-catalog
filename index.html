@@ -218,6 +218,12 @@
         gap: 16px;
       }
 
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
       #setup-form label {
         font-size: 0.9rem;
         color: var(--on-surface);
@@ -578,25 +584,27 @@
       async function createInputPrompt(baseurl, readerUrl) {
         const content = document.getElementById("content");
         content.innerHTML = `
-          <div id="setup-container">
-            <form id="setup-form" aria-label="Setup Form">
-              <div>
-                <label for="baseurl">Base URL:</label>
-                <input type="url" id="baseurl" value="${
-                  baseurl || ""
-                }" required placeholder="https://example.com/directory">
-              </div>
-              
-              <div>
-                <label for="reader_url">Reader URL:</label>
-                <input type="url" id="reader_url" value="${
-                  readerUrl || ""
-                }" required placeholder="https://reader.example.com">
-              </div>
-              
-              <button type="submit">Continue</button>
-            </form>
-          </div>
+            <div id="setup-container" class="setup-container">
+                <form id="setup-form" class="setup-form">
+                    <div class="form-group">
+                        <label for="baseurl" class="form-label">Base URL:</label>
+                        <input type="text" id="baseurl" value="${
+                          baseurl || ""
+                        }" required class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reader_url" class="form-label">Reader URL:</label>
+                        <input type="text" id="reader_url" value="${
+                          readerUrl || ""
+                        }" required class="form-input">
+                    </div>
+                    
+                    <button type="submit">
+                        Continue
+                    </button>
+                </form>
+            </div>
         `;
 
         return new Promise((resolve) => {
@@ -604,16 +612,14 @@
             .getElementById("setup-form")
             .addEventListener("submit", (e) => {
               e.preventDefault();
-              const baseurlInput = document
-                .getElementById("baseurl")
-                .value.trim();
-              const readerUrlInput = document
+              const baseurl = document.getElementById("baseurl").value.trim();
+              const readerUrl = document
                 .getElementById("reader_url")
                 .value.trim();
 
-              if (baseurlInput && readerUrlInput) {
+              if (baseurl && readerUrl) {
                 content.innerHTML = "";
-                resolve({ baseurl: baseurlInput, readerUrl: readerUrlInput });
+                resolve({ baseurl, readerUrl });
               }
             });
         });
