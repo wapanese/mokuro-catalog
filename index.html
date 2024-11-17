@@ -666,7 +666,7 @@
                 ""
               )}/upload?manga=${encodeURIComponent(
                 subdir
-              )}&volume=${encodeURIComponent(dir)}&url=${encodeURIComponent(
+              )}&volume=${encodeURIComponent(dir)}&source=${encodeURIComponent(
                 baseurl
               )}`;
               link.textContent = dir;
@@ -707,6 +707,7 @@
        * @returns {Promise<Object>} - Resolves with the entered baseurl and readerUrl.
        */
       async function createInputPrompt(baseurl, readerUrl) {
+        hideLoading();
         const content = document.getElementById("content");
         content.innerHTML = `
             <div id="setup-container" class="setup-container">
