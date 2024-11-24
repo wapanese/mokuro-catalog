@@ -321,15 +321,37 @@
         background-color: var(--primary);
         color: var(--on-primary);
       }
+      .settings-button {
+        position: absolute;
+        right: 20px;
+        color: var(--on-surface);
+        text-decoration: none;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        border-radius: var(--border-radius);
+        transition: background-color var(--transition-speed);
+      }
+
+      .settings-button:hover {
+        background-color: var(--primary);
+        color: var(--on-primary);
+      }
+
+      .settings-button.hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
     <header>
       <div class="header-container">
         <h1 id="page-header">Mokuro Catalog</h1>
+        <a href="#" class="settings-button" title="Settings">⚙</a>
       </div>
     </header>
-    
+
     <div id="loading" class="loading-overlay" hidden>
       <div class="spinner"></div>
       <div class="loading-text">Loading...</div>
@@ -627,15 +649,16 @@
       async function createSubdirView(baseurl, readerUrl, subdir) {
         updatePageTitle(subdir);
 
-        const headerContainer = document.querySelector('.header-container');
-        const backButton = document.createElement('a');
-        backButton.href = `?baseurl=${encodeURIComponent(baseurl)}&reader_url=${encodeURIComponent(readerUrl)}`;
-        backButton.className = 'back-button';
-        backButton.innerHTML = '➜';
-        backButton.title = 'Back to catalog';
-        backButton.style.transform = 'scale(-1, 1)';
+        const headerContainer = document.querySelector(".header-container");
+        const backButton = document.createElement("a");
+        backButton.href = `?baseurl=${encodeURIComponent(
+          baseurl
+        )}&reader_url=${encodeURIComponent(readerUrl)}`;
+        backButton.className = "back-button";
+        backButton.innerHTML = "➜";
+        backButton.title = "Back to catalog";
+        backButton.style.transform = "scale(-1, 1)";
         headerContainer.insertBefore(backButton, headerContainer.firstChild);
-
 
         showLoading();
 
@@ -708,6 +731,12 @@
        */
       async function createInputPrompt(baseurl, readerUrl) {
         hideLoading();
+
+        const settingsButton = document.querySelector(".settings-button");
+        if (settingsButton) {
+          settingsButton.classList.add("hidden");
+        }
+
         const content = document.getElementById("content");
         content.innerHTML = `
             <div id="setup-container" class="setup-container">
@@ -745,6 +774,11 @@
 
               if (baseurl && readerUrl) {
                 content.innerHTML = "";
+
+                if (settingsButton) {
+                  settingsButton.classList.remove("hidden");
+                }
+
                 resolve({ baseurl, readerUrl });
               }
             });
@@ -752,32 +786,64 @@
       }
 
       /**
+       * Retrieves URL parameters from the current window location.
+       * @returns {Object} - An object containing the baseurl, readerUrl, and subdir parameters.
+       */
+      function getUrlParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+          baseurl: params.get("baseurl"),
+          readerUrl: params.get("reader_url"),
+          subdir: params.get("subdir"),
+        };
+      }
+
+      /**
+       * Updates the URL parameters with the provided base URL, reader URL, and optional subdirectory.
+       * @param {string} baseurl - The base URL to set in the URL parameters.
+       * @param {string} readerUrl - The reader URL to set in the URL parameters.
+       * @param {string} [subdir=null] - The optional subdirectory to set in the URL parameters.
+       */
+      function updateUrlParams(baseurl, readerUrl, subdir = null) {
+        const newParams = new URLSearchParams({
+          baseurl: baseurl,
+          reader_url: readerUrl,
+        });
+        if (subdir) {
+          newParams.append("subdir", subdir);
+        }
+        const newUrl = `${window.location.pathname}?${newParams.toString()}`;
+        window.history.replaceState({}, "", newUrl);
+      }
+
+      /**
        * Initializes the application by determining whether to show the landing page or a subdirectory view.
        */
       async function init() {
-        const params = new URLSearchParams(window.location.search);
-        let baseurl = params.get("baseurl");
-        let readerUrl = params.get("reader_url");
-        const subdir = params.get("subdir");
+        let { baseurl, readerUrl, subdir } = getUrlParams();
 
         if (!baseurl || !readerUrl) {
-          const { baseurl: newBaseurl, readerUrl: newReaderUrl } =
-            await createInputPrompt(baseurl, readerUrl);
-          baseurl = newBaseurl;
-          readerUrl = newReaderUrl;
+          const result = await createInputPrompt(baseurl, readerUrl);
+          baseurl = result.baseurl;
+          readerUrl = result.readerUrl;
+          updateUrlParams(baseurl, readerUrl, subdir);
         }
 
-        // Update URL with the provided values
-        if (!params.get("baseurl") || !params.get("reader_url")) {
-          const newParams = new URLSearchParams({
-            baseurl: baseurl,
-            reader_url: readerUrl,
+        const settingsButton = document.querySelector(".settings-button");
+        if (settingsButton) {
+          settingsButton.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const result = await createInputPrompt(baseurl, readerUrl);
+            if (result) {
+              baseurl = result.baseurl;
+              readerUrl = result.readerUrl;
+              updateUrlParams(baseurl, readerUrl);
+
+              document.getElementById("content").innerHTML = "";
+              updatePageTitle("Mokuro Catalog");
+              await createLandingPage(baseurl, readerUrl);
+            }
           });
-          if (subdir) {
-            newParams.append("subdir", subdir);
-          }
-          const newUrl = `${window.location.pathname}?${newParams.toString()}`;
-          window.history.replaceState({}, "", newUrl);
         }
 
         if (subdir) {
@@ -786,7 +852,6 @@
           await createLandingPage(baseurl, readerUrl);
         }
       }
-
       window.addEventListener("DOMContentLoaded", init);
     </script>
   </body>
