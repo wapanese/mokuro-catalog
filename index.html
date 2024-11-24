@@ -667,7 +667,7 @@
               )}/upload?manga=${encodeURIComponent(
                 subdir
               )}&volume=${encodeURIComponent(dir)}&source=${encodeURIComponent(
-                baseurl
+                baseurl.replace(/\/+$/, "")
               )}`;
               link.textContent = dir;
               li.appendChild(link);
