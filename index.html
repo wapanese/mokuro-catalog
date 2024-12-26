@@ -334,6 +334,42 @@
       .settings-button.hidden {
         display: none;
       }
+
+      .cover-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 24px;
+      }
+
+      .cover-card {
+        background-color: var(--surface);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 4px 6px var(--shadow);
+        transition: transform var(--transition-speed),
+          box-shadow var(--transition-speed);
+        cursor: pointer;
+      }
+
+      .cover-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 12px var(--shadow);
+      }
+
+      .cover-card img {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+        transition: transform var(--transition-speed);
+      }
+
+      .cover-title {
+        padding: 12px;
+        background-color: var(--surface);
+        font-weight: 500;
+        font-size: 1rem;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
@@ -599,11 +635,9 @@
             dirs.forEach((dir) => {
               const li = document.createElement("li");
               const link = document.createElement("a");
-              link.href = `?baseurl=${encodeURIComponent(
-                baseurl
-              )}&reader_url=${encodeURIComponent(
-                readerUrl
-              )}&subdir=${encodeURIComponent(dir)}`;
+              link.href = `${removeSearchParam()}&subdir=${encodeURIComponent(
+                dir
+              )}`;
               link.textContent = dir;
               li.appendChild(link);
               ul.appendChild(li);
@@ -633,6 +667,62 @@
       }
 
       /**
+       * Creates a cover view landing page, displaying each directory as a cover image plus title.
+       * @param {string} baseurl - The base URL.
+       * @param {string} readerUrl - The reader URL.
+       */
+      async function createLandingPageCoverMode(baseurl, readerUrl) {
+        updatePageTitle("Mokuro Catalog");
+        showLoading();
+
+        try {
+          const content = document.getElementById("content");
+          content.innerHTML = ""; // Clear existing content
+
+          // Create a grid container
+          const grid = document.createElement("div");
+          grid.className = "cover-grid";
+
+          // Get all directories
+          const dirs = await getDirectories(baseurl, false);
+
+          // Use asyncPool to fetch first images for all directories in parallel
+          await asyncPool(8, dirs, async (dir) => {
+            const coverSrc = await getFirstImage(baseurl, dir);
+            const card = document.createElement("div");
+            card.className = "cover-card";
+
+            const img = document.createElement("img");
+            img.src =
+              coverSrc || "https://via.placeholder.com/250x350?text=No+Cover";
+            img.alt = dir;
+            card.appendChild(img);
+
+            const titleDiv = document.createElement("div");
+            titleDiv.className = "cover-title";
+            titleDiv.textContent = dir;
+            card.appendChild(titleDiv);
+
+            card.addEventListener("click", () => {
+              window.location.href = `${removeSearchParam()}&subdir=${encodeURIComponent(
+                dir
+              )}`;
+            });
+
+            grid.appendChild(card);
+          });
+
+          // Append the grid to the page
+          content.appendChild(grid);
+        } catch (error) {
+          console.error("Error creating cover mode:", error);
+          content.innerHTML = "<p>Failed to load cover mode.</p>";
+        } finally {
+          hideLoading();
+        }
+      }
+
+      /**
        * Creates the subdirectory view by displaying subfolders that have a matching .mokuro file.
        * @param {string} baseurl - The base URL.
        * @param {string} readerUrl - The reader URL.
@@ -643,9 +733,7 @@
 
         const headerContainer = document.querySelector(".header-container");
         const backButton = document.createElement("a");
-        backButton.href = `?baseurl=${encodeURIComponent(
-          baseurl
-        )}&reader_url=${encodeURIComponent(readerUrl)}`;
+        backButton.href = removeSearchParam("subdir");
         backButton.className = "back-button";
         backButton.innerHTML = "➜";
         backButton.title = "Back to catalog";
@@ -779,7 +867,7 @@
 
       /**
        * Retrieves URL parameters from the current window location.
-       * @returns {Object} - An object containing the baseurl, readerUrl, and subdir parameters.
+       * @returns {Object} - An object containing the baseurl, readerUrl, subdir, and coverMode parameters.
        */
       function getUrlParams() {
         const params = new URLSearchParams(window.location.search);
@@ -787,7 +875,22 @@
           baseurl: params.get("baseurl"),
           readerUrl: params.get("reader_url"),
           subdir: params.get("subdir"),
+          coverMode: params.get("cover_mode"),
         };
+      }
+
+      /**
+       * Removes a specified parameter from the URL search string
+       * @param {string} paramToRemove - The name of the parameter to remove from the URL search string
+       * @returns {string} The new search string with the parameter removed, including '?' if parameters remain, or empty string if no parameters
+       */
+      function removeSearchParam(paramToRemove) {
+        const searchParams = new URLSearchParams(window.location.search);
+
+        searchParams.delete(paramToRemove);
+
+        const newSearch = searchParams.toString();
+        return newSearch ? `?${newSearch}` : "";
       }
 
       /**
@@ -795,14 +898,23 @@
        * @param {string} baseurl - The base URL to set in the URL parameters.
        * @param {string} readerUrl - The reader URL to set in the URL parameters.
        * @param {string} [subdir=null] - The optional subdirectory to set in the URL parameters.
+       * @param {string} [coverMode=null] - The optional cover mode to set in the URL parameters.
        */
-      function updateUrlParams(baseurl, readerUrl, subdir = null) {
+      function updateUrlParams(
+        baseurl,
+        readerUrl,
+        subdir = null,
+        coverMode = null
+      ) {
         const newParams = new URLSearchParams({
           baseurl: baseurl,
           reader_url: readerUrl,
         });
         if (subdir) {
           newParams.append("subdir", subdir);
+        }
+        if (coverMode) {
+          newParams.append("cover_mode", coverMode);
         }
         const newUrl = `${window.location.pathname}?${newParams.toString()}`;
         window.history.replaceState({}, "", newUrl);
@@ -812,13 +924,13 @@
        * Initializes the application by determining whether to show the landing page or a subdirectory view.
        */
       async function init() {
-        let { baseurl, readerUrl, subdir } = getUrlParams();
+        let { baseurl, readerUrl, subdir, coverMode } = getUrlParams();
 
         if (!baseurl || !readerUrl) {
           const result = await createInputPrompt(baseurl, readerUrl);
           baseurl = result.baseurl;
           readerUrl = result.readerUrl;
-          updateUrlParams(baseurl, readerUrl, subdir);
+          updateUrlParams(baseurl, readerUrl, subdir, coverMode);
         }
 
         const settingsButton = document.querySelector(".settings-button");
@@ -829,11 +941,15 @@
             if (result) {
               baseurl = result.baseurl;
               readerUrl = result.readerUrl;
-              updateUrlParams(baseurl, readerUrl);
+              updateUrlParams(baseurl, readerUrl, subdir, coverMode);
 
               document.getElementById("content").innerHTML = "";
               updatePageTitle("Mokuro Catalog");
-              await createLandingPage(baseurl, readerUrl);
+              if (coverMode === "true") {
+                await createLandingPageCoverMode(baseurl, readerUrl);
+              } else {
+                await createLandingPage(baseurl, readerUrl);
+              }
             }
           });
         }
@@ -841,7 +957,11 @@
         if (subdir) {
           await createSubdirView(baseurl, readerUrl, subdir);
         } else {
-          await createLandingPage(baseurl, readerUrl);
+          if (coverMode === "true") {
+            await createLandingPageCoverMode(baseurl, readerUrl);
+          } else {
+            await createLandingPage(baseurl, readerUrl);
+          }
         }
       }
       window.addEventListener("DOMContentLoaded", init);
