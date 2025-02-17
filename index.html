@@ -679,6 +679,14 @@
           const content = document.getElementById("content");
           content.innerHTML = ""; // Clear existing content
 
+          // Add search bar
+          const searchDiv = document.createElement("div");
+          searchDiv.style.marginBottom = "20px";
+          searchDiv.innerHTML = `
+            <input type="text" id="search" placeholder="Search folders..." aria-label="Search folders">
+          `;
+          content.appendChild(searchDiv);
+
           // Create a grid container
           const grid = document.createElement("div");
           grid.className = "cover-grid";
@@ -714,6 +722,18 @@
 
           // Append the grid to the page
           content.appendChild(grid);
+
+          // Add search functionality
+          const searchInput = document.getElementById("search");
+          searchInput.addEventListener("input", (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = grid.getElementsByClassName("cover-card");
+
+            Array.from(cards).forEach((card) => {
+              const text = card.querySelector(".cover-title").textContent.toLowerCase();
+              card.style.display = text.includes(searchTerm) ? "" : "none";
+            });
+          });
         } catch (error) {
           console.error("Error creating cover mode:", error);
           content.innerHTML = "<p>Failed to load cover mode.</p>";
